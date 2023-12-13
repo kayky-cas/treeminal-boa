@@ -1,23 +1,41 @@
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    time::Duration,
+};
 
 use crossterm::{
-    event::{read, Event},
-    terminal, ExecutableCommand,
+    cursor,
+    event::{poll, read, Event, KeyCode},
+    terminal, QueueableCommand,
 };
 
 fn main() -> io::Result<()> {
     let mut stdout = io::stdout();
 
-    stdout.execute(terminal::Clear(terminal::ClearType::All))?;
+    stdout
+        .queue(terminal::Clear(terminal::ClearType::All))?
+        .queue(cursor::Hide)?
+        .flush()?;
 
     let (_w, _h) = terminal::size()?;
 
     loop {
-        match read()? {
-            Event::Key(_key) => {}
-            _ => {}
-        }
+        if poll(Duration::from_millis(20))? {
+            match read()? {
+                Event::Key(key) => {
+                    println!("{:?}", key);
 
-        stdout.flush()?;
+                    match key.code {
+                        KeyCode::Char('q') => break,
+                        _ => {}
+                    }
+
+                    stdout.flush()?;
+                }
+                _ => {}
+            }
+        }
     }
+
+    Ok(())
 }
